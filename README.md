@@ -1,7 +1,17 @@
-# indago
+<div align="center">
+	<img src="img/logo.png" alt="Indago"/>
+	<br>
+	<p>A very simple and lightweight visitor tracker middleware for Express.js servers.</p>
+</div>
 
-Indago is a very simple visitor tracker middleware for Express.js servers.
+---
 
+## Motivation
+
+I needed an extremely simple way to visualize how many users visit my web apps, so I built this really simple drop-in middleware to do it. Services like gtag and segment are overkill sometimes.
+
+
+# Installation
 ```bash
 # Install using npm
 npm install indago --save
@@ -9,7 +19,7 @@ npm install indago --save
 yarn add indago
 ```
 
-## Example
+## Common Usage
 ```js
 const http = require('http');
 const express = require('express');
