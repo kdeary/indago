@@ -1,0 +1,29 @@
+{
+  "name": "indago",
+  "version": "1.0.0",
+  "description": "A very simple and lightweight visitor tracker middleware for Express.js servers.",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kdeary/indago.git"
+  },
+  "keywords": [
+    "analytics",
+    "tracking",
+    "simple",
+    "authentication",
+    "lightweight",
+    "simple",
+    "middleware",
+    "express"
+  ],
+  "author": "kdeary",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kdeary/indago/issues"
+  },
+  "homepage": "https://github.com/kdeary/indago#readme"
+}
