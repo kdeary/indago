@@ -7,12 +7,17 @@
 
 		<style type="text/css">
 			#visitsChart {
-				width: 100vw;
+				/*width: 100vw;*/
 			}
 		</style>
 	</head>
 	<body>
-		<canvas id="visitsChart" width="1000" height="300"></canvas>
+		<div style="width: 100%; overflow-x: auto; overflow-y: hidden">
+			<div style="width: 3000px; height: 500px">
+				<canvas id="visitsChart" width="0" height="500"></canvas>
+			</div>
+		</div>
+		
 		<pre id="json"></pre>
 
 		<script type="text/javascript" src="https://unpkg.com/chart.js@3.7.1/dist/chart.min.js"></script>
@@ -39,14 +44,16 @@
 				const largestDateRange = getDateRange(visitKeys.reduce(
 					(acc, key) => [...acc, ...Object.keys(window.ANALYTICS[key])]
 				, []));
-				const labels = createDatelistFromRange(largestDateRange);
+				const paddedRange = [largestDateRange[0], largestDateRange[1]];
+				let allVisitsDates = [];
 				const datasets = [];
 
 				for(let i = 0; i < visitKeys.length; i++) {
 					const visitKey = visitKeys[i];
 					analyticsObj[visitKey] = "see above";
 
-					const visitData = repairVisitData(window.ANALYTICS[visitKey]);
+					const visitData = repairVisitData(window.ANALYTICS[visitKey], paddedRange);
+					allVisitsDates = allVisitsDates.concat(Object.keys(visitData));
 
 					const color = `hsl(${strHash(visitKey, 360)}deg 90% 54%)`;
 
@@ -59,15 +66,16 @@
 					});
 				}
 
+				const labels = Array.from(new Set(allVisitsDates));
+
 				return {
 					labels,
 					datasets
 				};
 			}
 
-			function repairVisitData(visits) {
-				const dateRange = getDateRange(Object.keys(visits));
-				const datelist = createDatelistFromRange(dateRange);
+			function repairVisitData(visits, range) {
+				const datelist = createDatelistFromRange(range);
 				const newVisitData = {};
 
 				for (let i = 0; i < datelist.length; i++) {
@@ -93,9 +101,9 @@
 
 			function createDatelistFromRange(range) {
 				if(!range || range[0] + range[1] === Infinity) return [];
-				return Array(Math.floor((range[1] - range[0]) / MILLISECONDS_DAY) || 1).fill(0).map((_, idx) => {
+				return Array.from(new Set(Array(Math.ceil((range[1] - range[0]) / MILLISECONDS_DAY) + 1 || 1).fill(1).map((_, idx) => {
 					return new Date(range[0] + (MILLISECONDS_DAY * idx)).toLocaleDateString();
-				});
+				})));
 			}
 		</script>
 	</body>
