@@ -18,7 +18,7 @@ const analyticsTracker = new Indago.Tracker({
 		password: 'securepassword123',
 
 		// 2. Base64 Authentication Header Code
-		base64: 'cm9vdDpzZWN1cmVwYXNzd29yZDMxMg==' // atob('cm9vdDpzZWN1cmVwYXNzd29yZDMxMg==') === 'root:securepassword312'
+		base64: 'cm9vdDpzZWN1cmVwYXNzd29yZDMxMg==', // atob('cm9vdDpzZWN1cmVwYXNzd29yZDMxMg==') === 'root:securepassword312'
 
 		// 3. SHA256 Hash of Base64 Authentication Header Code
 		hexHash: '68832558e77a2f66eb7703a4813b284fc49e086db75f232029ab269d0a494f55' // SHA256 Hash of 'cm9vdDpzZWN1cmVwYXNzd29yZDMxMg=='
