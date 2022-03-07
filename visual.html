@@ -16,35 +16,87 @@
 		<pre id="json"></pre>
 
 		<script type="text/javascript" src="https://unpkg.com/chart.js@3.7.1/dist/chart.min.js"></script>
-		<script type="text/javascript" src="/_debug/analytics.js"></script>
+		<%%% ANALYTICS %%%>
 
 		<script type="text/javascript">
-			const jsonText = document.querySelector('#json');
-			const labels = Object.keys(window.ANALYTICS.visits);
+			const MILLISECONDS_DAY = 24 * 60 * 60 * 1000;
+			let analyticsObj = { ...window.ANALYTICS };
+			const { labels, datasets } = buildVisitsData();
 
-			const data = {
-				labels: labels,
-				datasets: [{
-					label: 'Visits',
-					backgroundColor: 'rgb(255, 99, 132)',
-					borderColor: 'rgb(255, 99, 132)',
-					cubicInterpolationMode: 'monotone',
-					data: Object.values(window.ANALYTICS.visits)
-				}]
-			};
-
-			const config = {
+			const visitsChart = new Chart(document.getElementById('visitsChart'), {
 				type: 'line',
-				data: data,
+				data: { labels, datasets },
 				options: {}
-			};
+			});
+			const jsonText = document.querySelector('#json');
 
-			const visitsChart = new Chart(document.getElementById('visitsChart'), config);
+			jsonText.innerText = JSON.stringify(analyticsObj, null, 4);
 
-			jsonText.innerText = JSON.stringify({
-				...window.ANALYTICS,
-				visits: "see above"
-			}, null, 4);
+			function buildVisitsData() {
+				const visitKeys = Object.keys(window.ANALYTICS).filter(k => k.toLowerCase().startsWith('$'));
+				if(visitKeys.length === 0) return {labels: [], datasets: []};
+
+				const largestDateRange = getDateRange(visitKeys.reduce(
+					(acc, key) => [...acc, ...Object.keys(window.ANALYTICS[key])]
+				, []));
+				const labels = createDatelistFromRange(largestDateRange);
+				const datasets = [];
+
+				for(let i = 0; i < visitKeys.length; i++) {
+					const visitKey = visitKeys[i];
+					analyticsObj[visitKey] = "see above";
+
+					const visitData = repairVisitData(window.ANALYTICS[visitKey]);
+
+					const color = `hsl(${strHash(visitKey, 360)}deg 90% 54%)`;
+
+					datasets.push({
+						label: visitKey.replace('$', ''),
+						backgroundColor: color,
+						borderColor: color,
+						cubicInterpolationMode: 'monotone',
+						data: Object.values(visitData)
+					});
+				}
+
+				return {
+					labels,
+					datasets
+				};
+			}
+
+			function repairVisitData(visits) {
+				const dateRange = getDateRange(Object.keys(visits));
+				const datelist = createDatelistFromRange(dateRange);
+				const newVisitData = {};
+
+				for (let i = 0; i < datelist.length; i++) {
+					newVisitData[datelist[i]] = visits[datelist[i]] || 0;
+				}
+
+				return newVisitData;
+			}
+
+			function strHash(str, max=94906265) {
+				return str.split("").reduce((acc, c) => acc * c.charCodeAt(0), 1) % max;
+			}
+
+			function getDateRange(arr) {
+				return arr.reduce((range, val) => {
+					const date = Number(new Date(val));
+					return [
+						Math.min(range[0], date),
+						Math.max(range[1], date)
+					];
+				}, [Infinity, 0]);
+			}
+
+			function createDatelistFromRange(range) {
+				if(!range || range[0] + range[1] === Infinity) return [];
+				return Array(Math.floor((range[1] - range[0]) / MILLISECONDS_DAY) || 1).fill(0).map((_, idx) => {
+					return new Date(range[0] + (MILLISECONDS_DAY * idx)).toLocaleDateString();
+				});
+			}
 		</script>
 	</body>
 </html>

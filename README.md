@@ -33,8 +33,17 @@ const analyticsTracker = new Indago.Tracker({
 		// Custom analytics properties
 		imageFolderSize: 0 // Example property
 	},
-	analyticsRoute: '/_debug', // Route to expose the analytics dashboard on.
-	savePath: __dirname + '/analytics.json', // Path to save analytics data
+
+	// Path to save analytics data
+	savePath: __dirname + '/analytics.json',
+
+	// How fast the IPs should be cleared.
+	// Should be the average session length. Defaults to 10 minutes
+	clearIPsInterval: 10 * 60000,
+
+	// This string is displayed next to the login prompt on some browsers.
+	realm: 'example analytics',
+
 	authentication: { // Defaults to false for no dashboard route authentication
 		// Choose only one method of dashboard authentication:
 		// 1. Username and Password
@@ -42,26 +51,30 @@ const analyticsTracker = new Indago.Tracker({
 		password: 'securepassword123',
 
 		// 2. Base64 Authentication Header Code
-		base64: 'cm9vdDpzZWN1cmVwYXNzd29yZDMxMg=='
+		base64: 'cm9vdDpzZWN1cmVwYXNzd29yZDMxMg==',
 		// atob('cm9vdDpzZWN1cmVwYXNzd29yZDMxMg==') === 'root:securepassword312'
 
-		// 3. Hex representation of a SHA256 Hash of Base64 Authentication Header Code
+		// 3. SHA256 Hash of Base64 Authentication Header Code
 		hexHash: '68832558e77a2f66eb7703a4813b284fc49e086db75f232029ab269d0a494f55'
 		// SHA256 Hash of 'cm9vdDpzZWN1cmVwYXNzd29yZDMxMg=='
 	},
 	// Called every 10 seconds
 	onTick: async () => {
-		if(Indago.Ticker('Update Image Folder Size', 5 * 60000)) { // Updates the image folder size every 5 minutes
+		if(Indago.Ticker('Update Image Folder Size', 10000)) { // Updates the image folder size property every 10 seconds
 			analyticsTracker.update({
 				imageFolderSize: await getImageFolderSize()
 			});
 		}
 	},
-	// Called when a request is made to the debug route
-	onDebugRequest: (req, res) => {},
+	// Called when a request is made to the analytics dashboard route
+	onDashboardRequest: (req, res) => {},
 });
 
-app.use('/', analyticsTracker.middleware());
+app.use('/_analytics', analyticsTracker.analyticsMW());
+
+app.get('/', analyticsTracker.trackerMW(), (req, res) => {
+	res.send("Hello!");
+});
 
 doSetupTask().then(async () => {
 	await setupDatabaseOrSomethingSimilar();

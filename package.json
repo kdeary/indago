@@ -25,5 +25,15 @@
   "bugs": {
     "url": "https://github.com/kdeary/indago/issues"
   },
-  "homepage": "https://github.com/kdeary/indago#readme"
+  "homepage": "https://github.com/kdeary/indago#readme",
+  "devDependencies": {
+    "express": "^4.17.3"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "./analytics.json"
+    ],
+    "ext": "html,css,js",
+    "delay": 100
+  }
 }

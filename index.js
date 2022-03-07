@@ -1,32 +1,35 @@
 const crypto = require('crypto');
+const { getClientIp } = require('./vendor/request-ip');
 const fsp = require('fs').promises;
 
 const ANALYTICS_TEMPLATE = {
-	visits: {},
+	"$visits/": {},
 	lastSuccessfulDebugAccesses: [],
 	lastUnsuccessfulDebugAccesses: [],
 };
 
-const TICKER_TRACKERS = {
-
-};
+const TICKER_TRACKERS = {};
 
 const log_error = (...args) => console.error("INDAGO ERROR:\n", ...args);
+
+const DEBUG_ACCESS_PROPERTY_DEBOUNCE = 3 * 60000;
 
 class Tracker {
 	constructor({
 		template,
 		savePath,
-		analyticsRoute,
+		clearIPsInterval,
 		authentication,
+		realm,
 		onInit,
 		onTick,
-		onDebugRequest
+		onDashboardRequest
 	}) {
 		this.template = template || {};
-		this.analyticsRoute = analyticsRoute || '/_debug';
 		this.savePath = savePath || __dirname + '/analytics.json';
 		this.authentication = authentication || false;
+		this.realm = realm || 'Indago Analytics';
+		this.clearIPsInterval = clearIPsInterval ||  10 * 60000;
 
 		this.analytics = {
 			...ANALYTICS_TEMPLATE,
@@ -38,7 +41,8 @@ class Tracker {
 		this.ready = false;
 
 		this.onTick = onTick || (() => {});
-		this.onDebugRequest = onDebugRequest || (() => {});
+		this.onDashboardRequest = onDashboardRequest || (() => {});
+		this.visualHTMLTemplate = "";
 
 		this.isAuthenticated = req => {
 			if(this.authentication) {
@@ -66,13 +70,12 @@ class Tracker {
 	async init() {
 		const json = await fsp.readFile(this.savePath).catch(async (err) => {
 			if(err.code === 'ENOENT') {
-				await fsp.writeFile(this.savePath, JSON.stringify(
-					this.update()
-				)).catch(err => {
+				const saveStr = JSON.stringify(this.update());
+				await fsp.writeFile(this.savePath, saveStr).catch(err => {
 					log_error("Error creating new analytics file", err);
 				});
 
-				return ANALYTICS_TEMPLATE;
+				return saveStr;
 			} else {
 				log_error(err);
 			}
@@ -97,12 +100,14 @@ class Tracker {
 				this.didAnalyticsUpdate = false;
 			}
 
-			if(Ticker('Clear Counted IPs', 10 * 60000)) {
+			if(Ticker('Clear Counted IPs', this.clearIPsInterval)) {
 				this.countedIPs = {};
 			}
 
 			this.onTick();
 		}, 10000);
+
+		this.visualHTMLTemplate = (await fsp.readFile(__dirname + '/visual.html')).toString();
 
 		this.ready = true;
 	}
@@ -111,58 +116,63 @@ class Tracker {
 		clearInterval(this.tickInterval);
 	}
 
-	middleware() {
+	analyticsMW() {
 		return (req, res, next) => {
 			if(!this.ready) return next();
 
-			if(req.path.startsWith(this.analyticsRoute)) {
-				this.onDebugRequest(req, res);
+			req._indagoIP = getClientIp(req.ip) || req.ip;
 
-				const isAuthenticated = this.isAuthenticated(req);
+			const isAuthenticated = this.isAuthenticated(req);
 
-				if(!isAuthenticated) {
-					res.set('WWW-Authenticate', 'Basic realm="analytics"') // change this
-					res.status(401).send('Authentication required.') // custom message
+			if(!isAuthenticated) {
+				res.set('WWW-Authenticate', `Basic realm="${this.realm}"`) // change this
+				res.status(401).send('Authentication required.') // custom message
 
-					if(isAuthenticated === false) {
-						this.update(obj => ({
-							lastUnsuccessfulDebugAccesses: [
-								{
-									date: new Date().toLocaleString(),
-									ip: req.ip
-								},
-								...obj.lastUnsuccessfulDebugAccesses
-							].slice(0, 5)
-						}));
-					}
-
-					return;
+				if(isAuthenticated === false) {
+					this.triggerDebugAccess('lastUnsuccessfulDebugAccesses', req);
 				}
 
-				if(req.path === this.analyticsRoute + '/analytics.js') {
-					res.set('Content-Type', 'text/javascript');
-					res.send(`window.ANALYTICS = ${JSON.stringify(this.analytics)};`);
-					return res.end();
-				} else if(req.path === this.analyticsRoute + '/analytics.json') {
-					return res.json(this.analytics);
-				}
-
-				this.update(obj => ({
-					lastSuccessfulDebugAccesses: [
-						{
-							date: new Date().toLocaleString(),
-							ip: req.ip
-						},
-						...obj.lastSuccessfulDebugAccesses
-					].slice(0, 5)
-				}));
-
-				return res.sendFile(__dirname + '/visual.html');
+				return;
 			}
 
-			this.recordVisit(req.ip);
-			return next();
+			this.onDashboardRequest(req, res);
+
+			if(req.path === '/analytics.json') {
+				return res.json(this.analytics);
+			}
+
+			this.triggerDebugAccess('lastSuccessfulDebugAccesses', req);
+
+			return res.send(this.visualHTMLTemplate.replace(
+				'<%%% ANALYTICS %%%>',
+				`<script>window.ANALYTICS = ${JSON.stringify(this.analytics)};</script>`
+			));
 		};
+	}
+
+	trackerMW() {
+		return (req, res, next) => {
+			req._indagoIP = getClientIp(req.ip) || req.ip;
+
+			this.recordVisit(req._indagoIP, "$visits" + req.path);
+			next();
+		};
+	}
+
+	triggerDebugAccess(debugAccessesID, req) {
+		if(
+			!this.analytics[debugAccessesID][0] ||
+			this.analytics[debugAccessesID][0].ip !== req._indagoIP ||
+			Date.now() - new Date(this.analytics[debugAccessesID][0]) > DEBUG_ACCESS_PROPERTY_DEBOUNCE
+		) {
+			this.analytics[debugAccessesID].unshift({
+				date: new Date().toLocaleString(),
+				ip: req._indagoIP
+			});
+			this.analytics[debugAccessesID] = this.analytics[debugAccessesID].slice(0, 5);
+
+			this.update();
+		}
 	}
 
 	update(newAnalytics={}) {
@@ -180,21 +190,21 @@ class Tracker {
 		};
 	}
 
-	recordVisit(ip) {
+	recordVisit(ip, prop="$visits") {
 		const todaysDate = (new Date()).toLocaleDateString();
 
-		if(this.countedIPs[ip]) return this.analytics.visits[todaysDate];
+		if(this.countedIPs[ip]) return this.analytics[prop][todaysDate];
 		this.countedIPs[ip] = true;
 
-		if(!this.analytics.visits[todaysDate]) {
-			this.analytics.visits[todaysDate] = 0;
+		if(!this.analytics[prop][todaysDate]) {
+			this.analytics[prop][todaysDate] = 0;
 		}
 
-		this.analytics.visits[todaysDate]++;
+		this.analytics[prop][todaysDate]++;
 
 		this.update();
 
-		return this.analytics.visits[todaysDate];
+		return this.analytics[prop][todaysDate];
 	}
 }
 
