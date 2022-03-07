@@ -1,5 +1,5 @@
 <div align="center">
-	<img src="img/logo.png" alt="Indago"/>
+	<img src="img/logo.svg" alt="Indago"/>
 	<br>
 	<p>A very simple and lightweight visitor tracker middleware for Express.js servers.</p>
 </div>
