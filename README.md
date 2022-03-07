@@ -73,3 +73,10 @@ doSetupTask().then(async () => {
 	});
 }).catch(console.error);
 ```
+
+
+## Dashboard
+
+Then go to the route you've set to see the dashboard.
+
+<img src="img/dashboard.png" alt="Indago Dashboard"/>
