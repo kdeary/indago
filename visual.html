@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>analytics</title>
+
+		<style type="text/css">
+			#visitsChart {
+				width: 100vw;
+			}
+		</style>
+	</head>
+	<body>
+		<canvas id="visitsChart" width="1000" height="300"></canvas>
+		<pre id="json"></pre>
+
+		<script type="text/javascript" src="https://unpkg.com/chart.js@3.7.1/dist/chart.min.js"></script>
+		<script type="text/javascript" src="/_debug/analytics.js"></script>
+
+		<script type="text/javascript">
+			const jsonText = document.querySelector('#json');
+			const labels = Object.keys(window.ANALYTICS.visits);
+
+			const data = {
+				labels: labels,
+				datasets: [{
+					label: 'Visits',
+					backgroundColor: 'rgb(255, 99, 132)',
+					borderColor: 'rgb(255, 99, 132)',
+					cubicInterpolationMode: 'monotone',
+					data: Object.values(window.ANALYTICS.visits)
+				}]
+			};
+
+			const config = {
+				type: 'line',
+				data: data,
+				options: {}
+			};
+
+			const visitsChart = new Chart(document.getElementById('visitsChart'), config);
+
+			jsonText.innerText = JSON.stringify({
+				...window.ANALYTICS,
+				visits: "see above"
+			}, null, 4);
+		</script>
+	</body>
+</html>
