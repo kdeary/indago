@@ -193,6 +193,8 @@ class Tracker {
 	recordVisit(ip, prop="$visits") {
 		const todaysDate = (new Date()).toLocaleDateString();
 
+		if(!this.analytics[prop]) this.analytics[prop] = {};
+
 		if(this.countedIPs[ip]) return this.analytics[prop][todaysDate];
 		this.countedIPs[ip] = true;
 
