@@ -1,6 +1,7 @@
 <div align="center">
 	<img src="img/logo.svg" alt="Indago"/>
 	<br>
+	<i>'track down' in Latin</i>
 	<p>A very simple and lightweight visitor tracker middleware for Express.js servers.</p>
 </div>
 
