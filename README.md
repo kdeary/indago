@@ -1,7 +1,7 @@
 <div align="center">
 	<img src="img/logo.svg" alt="Indago"/>
 	<br>
-	<i>'track down' in Latin</i>
+	<i>means 'track down' in Latin</i>
 	<p>A very simple and lightweight visitor tracker middleware for Express.js servers.</p>
 </div>
 
@@ -9,7 +9,7 @@
 
 ## Motivation
 
-I needed an extremely simple way to visualize how many users visit my web apps, so I built this really simple drop-in middleware to do it. Services like gtag and segment are overkill sometimes.
+I needed an extremely simple way to visualize how many users visit my web apps, so I built this really simple drop-in middleware to do it. Platforms like gtag and segment can be overkill.
 
 
 # Installation
@@ -20,7 +20,7 @@ npm install indago --save
 yarn add indago
 ```
 
-## Common Usage
+## Usage
 ```js
 const http = require('http');
 const express = require('express');
@@ -44,11 +44,14 @@ const analyticsTracker = new Indago.Tracker({
 	// This string is displayed next to the login prompt on some browsers.
 	realm: 'example analytics',
 
-	authentication: { // Defaults to false for no dashboard route authentication
+	// Defaults to false for no dashboard route authentication
+	authentication: {
 		// Choose only one method of dashboard authentication:
+
 		// 1. Username and Password
 		username: 'root',
 		password: 'securepassword123',
+		// plaintext
 
 		// 2. Base64 Authentication Header Code
 		base64: 'cm9vdDpzZWN1cmVwYXNzd29yZDMxMg==',
@@ -58,6 +61,7 @@ const analyticsTracker = new Indago.Tracker({
 		hexHash: '68832558e77a2f66eb7703a4813b284fc49e086db75f232029ab269d0a494f55'
 		// SHA256 Hash of 'cm9vdDpzZWN1cmVwYXNzd29yZDMxMg=='
 	},
+
 	// Called every 10 seconds
 	onTick: async () => {
 		if(Indago.Ticker('Update Image Folder Size', 10000)) { // Updates the image folder size property every 10 seconds
