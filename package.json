@@ -1,6 +1,6 @@
 {
   "name": "indago",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "A very simple and lightweight visitor tracker middleware for Express.js servers.",
   "main": "index.js",
   "scripts": {
