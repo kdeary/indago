@@ -120,7 +120,7 @@ class Tracker {
 		return (req, res, next) => {
 			if(!this.ready) return next();
 
-			req._indagoIP = getClientIp(req.ip) || req.ip;
+			req._indagoIP = getClientIp(req) || req.ip;
 
 			const isAuthenticated = this.isAuthenticated(req);
 
@@ -152,7 +152,7 @@ class Tracker {
 
 	trackerMW() {
 		return (req, res, next) => {
-			req._indagoIP = getClientIp(req.ip) || req.ip;
+			req._indagoIP = getClientIp(req) || req.ip;
 
 			this.recordVisit(req._indagoIP, "$visits" + req.path);
 			next();
